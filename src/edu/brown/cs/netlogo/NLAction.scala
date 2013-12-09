@@ -31,7 +31,7 @@ class NLAction(ext:BURLAPExtension, domain:Domain, name:String, action:CommandTa
     val ourContext = new ExtensionContext(callingContext.workspace, new Context(callingContext.nvmContext,callingContext.workspace.world.observer))
     ext.versioner.restoreFromBurlapState(ourContext, safeS)
     
-    action.perform(ourContext, Array())
+    ext.versioner.doCommands(action, ourContext, Array())
     
     val outstate = ext.versioner.copyIntoState(ourContext.workspace.world, domain)
     outstate.setFixerUp(safeS.fixerUp)

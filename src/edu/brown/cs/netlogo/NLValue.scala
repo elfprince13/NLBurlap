@@ -1,6 +1,7 @@
 package edu.brown.cs.netlogo
 
 import burlap.oomdp.core.Value
+
 import burlap.oomdp.core.Attribute
 
 import org.nlogo.api.DefaultClassManager
@@ -16,6 +17,10 @@ import org.nlogo.api.Argument
 import org.nlogo.api.ExtensionException
 import org.nlogo.api.LogoException
 import org.nlogo.nvm.ExtensionContext
+
+import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
+
 
 class NLValue(val attr:NLAttribute) extends Value(attr) {
   
@@ -60,10 +65,24 @@ class NLValue(val attr:NLAttribute) extends Value(attr) {
     }
   }
 
-  def getStringVal(): String = { null }
+  def getStringVal(): String = {
+    if (attr.attrType == Attribute.AttributeType.MULTITARGETRELATIONAL || attr.attrType == Attribute.AttributeType.RELATIONAL){
+      getAllRelationalTargets.mkString(";")
+    } else if (attr.attrType == Attribute.AttributeType.REAL ||attr.attrType == Attribute.AttributeType.REALUNBOUND || attr.attrType == Attribute.AttributeType.DISC) {
+      getNumericRepresentation.toString
+    } else {
+      ""
+    }
+  }
 
-  def getAllRelationalTargets(): java.util.Set[String] = { null }
+  def getAllRelationalTargets(): java.util.Set[String] = {
+    if (attr.attrType == Attribute.AttributeType.MULTITARGETRELATIONAL || attr.attrType == Attribute.AttributeType.RELATIONAL){
+      attr.evaluate(owningAgent,boundState).asInstanceOf[java.util.Set[String]]
+    } else {
+      throw new ExtensionException("Real and discrete types have no relational targets")
+    }
+  }
 
-  def getNumericRepresentation(): Double = { 0.0d }
+  def getNumericRepresentation(): Double = getRealVal
 
 }

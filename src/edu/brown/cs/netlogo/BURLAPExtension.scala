@@ -41,6 +41,7 @@ class BURLAPExtension extends DefaultClassManager {
 		primitiveManager.addPrimitive("expose-agent-class", new MakeBURLAPClassForBreed(this,"expose-agent-class"))
 		primitiveManager.addPrimitive("expose-own-attr", new ExposeOwn(this,"expose-own-attr"))
 		primitiveManager.addPrimitive("capture-current-state",new CaptureCurrentState(this,"capture-current-state"))
+		primitiveManager.addPrimitive("return-to-state",new ReturnToState(this,"return-to-state"))
 		
 
 		primitiveManager.addPrimitive("attr:NOTYPE", new Attributer(this,"attr:NOTYPE",Attribute.AttributeType.NOTYPE))
@@ -217,12 +218,13 @@ class CaptureCurrentState(ext:BURLAPExtension, cmdName:String) extends DefaultRe
     override def getAgentClassString():String = { "OTPL" }
 
     override def report(args:Array[Argument], context:Context) = {
+      var outstate:NLState = null
       try{
         ext.contextStack.push(context.asInstanceOf[ExtensionContext])
         val world = context.asInstanceOf[ExtensionContext].workspace.world 
         val domainName = args(0).getString
         val domain = ext.domainMap(domainName)
-        ext.versioner.copyIntoState(world,domain)
+        outstate = ext.versioner.copyIntoState(world,domain)
       } catch {
         case e : Exception => val sw = new StringWriter
         e.printStackTrace( new PrintWriter(sw) )
@@ -232,7 +234,39 @@ class CaptureCurrentState(ext:BURLAPExtension, cmdName:String) extends DefaultRe
           ext.contextStack.pop
         }
       }
+      outstate
     }
+}
+
+class ReturnToState(ext:BURLAPExtension, cmdName:String) extends DefaultCommand {
+  override def getSyntax:Syntax = {
+    Syntax.commandSyntax(Array[Int](Syntax.StringType,Syntax.WildcardType))
+  }
+  
+  override def getAgentClassString():String = { "OTPL" }
+
+  override def perform(args:Array[Argument], context:Context) = {
+    try{
+      ext.contextStack.push(context.asInstanceOf[ExtensionContext])
+      val world = context.asInstanceOf[ExtensionContext].workspace.world 
+      val domainName = args(0).getString
+      val domain = ext.domainMap(domainName)
+      if(domain != null){
+        val state = args(1).get.asInstanceOf[NLState]     
+        ext.versioner.restoreFromBurlapState(context.asInstanceOf[ExtensionContext],state)
+      } else {
+        throw new IllegalArgumentException("Domain must be a valid domain");
+      }
+    } catch {
+      case e : Exception => val sw = new StringWriter
+      e.printStackTrace( new PrintWriter(sw) )
+      throw new ExtensionException("Error in %s: %s\n%s".format(cmdName,e.getMessage,sw.toString))
+    } finally {
+      if(ext.contextStack.nonEmpty && ext.contextStack.top == context) {
+        ext.contextStack.pop
+      }
+    }
+  }
 }
 
 
