@@ -21,7 +21,7 @@ import org.nlogo.nvm.ExtensionContext
 import org.nlogo.api.CommandTask
 
 
-class NLAction(ext:BURLAPExtension, domain:Domain, name:String, action:CommandTask) extends Action {
+class NLAction(ext:BURLAPExtension, domain:Domain, name:String, action:CommandTask, classesList:Array[String]=Array[String]()) extends Action(name, domain, classesList) {
 
   protected  def performActionHelper(s: State, params: Array[String]): State = {
     val safeS = s match {
