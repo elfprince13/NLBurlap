@@ -5,16 +5,10 @@ import burlap.oomdp.core.Domain
 import burlap.oomdp.core.Value
 import org.nlogo.nvm.ExtensionContext
 import org.nlogo.nvm.Context
-
 import org.nlogo.agent.Agent
 import org.nlogo.agent.AgentSet
-
-
-
-
 import org.nlogo.api.ReporterTask
 import org.nlogo.api.CommandTask
-
 import java.util.{ArrayList,HashMap}
 import scala.collection.Set
 import scala.collection.JavaConverters._

@@ -2,7 +2,7 @@ package edu.brown.cs.netlogo
 
 import burlap.oomdp.core.TerminalFunction
 import burlap.oomdp.core.Domain
-import org.nlogo.nvm.ReporterTask
+import org.nlogo.api.ReporterTask
 import burlap.oomdp.core.State
 import org.nlogo.nvm.ExtensionContext
 

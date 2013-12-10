@@ -4,7 +4,6 @@ import burlap.oomdp.singleagent.classbased.{CompositeAction,CompositeActionModel
 import burlap.oomdp.core.{State,Domain}
 import burlap.oomdp.singleagent.Action
 import burlap.oomdp.singleagent.GroundedAction
-
 import scala.collection._
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._

@@ -4,7 +4,6 @@ import burlap.oomdp.singleagent.Action
 import burlap.oomdp.core.Attribute
 import burlap.oomdp.core.Domain
 import burlap.oomdp.core.State
-
 import org.nlogo.api.DefaultClassManager
 import org.nlogo.api.LogoListBuilder
 import org.nlogo.api.PrimitiveManager

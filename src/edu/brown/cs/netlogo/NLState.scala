@@ -3,8 +3,6 @@ package edu.brown.cs.netlogo
 import burlap.oomdp.core.State
 import burlap.oomdp.core.Attribute
 import java.security.MessageDigest
-
-
 import org.nlogo.api.CommandTask
 import scala.collection._
 import scala.collection.JavaConversions._
