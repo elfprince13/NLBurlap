@@ -24,11 +24,18 @@ import org.nlogo.api.CommandTask
 class NLAction(ext:BURLAPExtension, domain:Domain, name:String, action:CommandTask) extends Action {
 
   protected  def performActionHelper(s: State, params: Array[String]): State = {
-    val safeS = s.asInstanceOf[NLState]
+    val safeS = s match {
+      case nls:NLState => nls
+      case ss:State => new NLState(ss)
+    }
     val callingContext = ext.contextStack.top
     
     // Probably need to be observer 
-    val ourContext = new ExtensionContext(callingContext.workspace, new Context(callingContext.nvmContext,callingContext.workspace.world.observer))
+    //val innerObsContext = new Context(callingContext.nvmContext,callingContext.workspace.world.observer)
+    //innerObsContext.agent = callingContext.workspace.world.observer
+    //innerObsContext.myself = callingContext.workspace.world.observer
+    //innerObsContext.agentBit = callingContext.workspace.world.observer.getAgentBit
+    val ourContext = new ExtensionContext(callingContext.workspace, ext.versioner.makeContextForAgent(callingContext.nvmContext,callingContext.workspace.world.observer)) //innerObsContext)
     ext.versioner.restoreFromBurlapState(ourContext, safeS)
     
     ext.versioner.doCommands(action, ourContext, Array())

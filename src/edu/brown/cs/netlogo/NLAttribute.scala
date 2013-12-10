@@ -13,16 +13,17 @@ import org.nlogo.agent.AgentSet
 
 
 import org.nlogo.api.ReporterTask
+import org.nlogo.api.CommandTask
 
 import java.util.{ArrayList,HashMap}
 import scala.collection.Set
 import scala.collection.JavaConverters._
 import scala.collection.JavaConversions._
 
-class NLAttribute(ext:BURLAPExtension, domain:Domain, name:String, reporter:ReporterTask, val attrType:Attribute.AttributeType) extends Attribute(domain,name,attrType) {
+class NLAttribute(val ext:BURLAPExtension, domain:Domain, name:String, reporter:ReporterTask, setter:CommandTask, val attrType:Attribute.AttributeType) extends Attribute(domain,name,attrType) {
 	
   override def copy(newDomain:Domain):NLAttribute = {
-    val natt = new NLAttribute(ext, newDomain, name, reporter, attrType)
+    val natt = new NLAttribute(ext, newDomain, name, reporter, setter, attrType)
     natt.lowerLim = this.lowerLim
     natt.upperLim = this.upperLim
     natt.discValues = new ArrayList[String](discValues)
@@ -53,12 +54,20 @@ class NLAttribute(ext:BURLAPExtension, domain:Domain, name:String, reporter:Repo
     val callingContext = ext.contextStack.top
     
     // Probably need to be observer 
-    val obsContext = new ExtensionContext(callingContext.workspace, new Context(callingContext.nvmContext,callingContext.workspace.world.observer))
+    // val innerObsContext = new Context(callingContext.nvmContext,callingContext.workspace.world.observer)
+    // innerObsContext.agent = callingContext.workspace.world.observer
+    // innerObsContext.myself = callingContext.workspace.world.observer
+    // innerObsContext.agentBit = callingContext.workspace.world.observer.getAgentBit
+    val obsContext = new ExtensionContext(callingContext.workspace, ext.versioner.makeContextForAgent(callingContext.nvmContext,callingContext.workspace.world.observer)) // innerObsContext)
     ext.versioner.restoreFromBurlapState(obsContext, state)
     
     val agent = ext.versioner.getAgentFromString(obsContext.workspace.world, agentName, o.getObjectClass.name)
     
-    val agentContext = new ExtensionContext(obsContext.workspace, new Context(obsContext.nvmContext,agent))
+    // val innerAgentContext = new Context(obsContext.nvmContext,agent)
+    // innerAgentContext.agent = agent
+    // innerAgentContext.myself = agent
+    // innerAgentContext.agentBit = agent.getAgentBit
+    val agentContext = new ExtensionContext(obsContext.workspace, ext.versioner.makeContextForAgent(obsContext.nvmContext,agent)) // innerAgentContext)
     val seenValue = ext.versioner.getReport(reporter, agentContext, Array())
     attrType match {
       case Attribute.AttributeType.RELATIONAL => Set[String](seenValue.asInstanceOf[Agent].toString).asJava
@@ -76,6 +85,41 @@ class NLAttribute(ext:BURLAPExtension, domain:Domain, name:String, reporter:Repo
       }
       case Attribute.AttributeType.NOTYPE => seenValue
     }
+  }
+  
+  def update(agentName:String,state:NLState,intype:Any):Unit = {
+    val o = state.getObject(agentName)
+    
+    val callingContext = ext.contextStack.top
+    
+    // Probably need to be observer 
+    //val innerObsContext = new Context(callingContext.nvmContext,callingContext.workspace.world.observer)
+    //innerObsContext.agent = callingContext.workspace.world.observer
+    //innerObsContext.myself = callingContext.workspace.world.observer
+    //innerObsContext.agentBit = callingContext.workspace.world.observer.getAgentBit
+    val obsContext = new ExtensionContext(callingContext.workspace,  ext.versioner.makeContextForAgent(callingContext.nvmContext,callingContext.workspace.world.observer)) // innerObsContext)
+    if(!ext.versioner.isStreaming){
+       ext.versioner.restoreFromBurlapState(obsContext, state) 
+    }
+    val agent = ext.versioner.getAgentFromString(obsContext.workspace.world, agentName, o.getObjectClass.name)
+    
+    //val innerAgentContext = new Context(obsContext.nvmContext,agent)
+    //innerAgentContext.agent = agent
+    //innerAgentContext.myself = agent
+    //innerAgentContext.agentBit = agent.getAgentBit
+    val agentContext = new ExtensionContext(obsContext.workspace, ext.versioner.makeContextForAgent(obsContext.nvmContext,agent)) // innerAgentContext)
+    ext.versioner.doCommands(setter, agentContext, Array(attrType match {
+      case Attribute.AttributeType.RELATIONAL => ext.versioner.getAgentFromString(obsContext.workspace.world, intype.asInstanceOf[String])
+      case Attribute.AttributeType.MULTITARGETRELATIONAL => ext.versioner.getAgentSetFromStrings(obsContext.workspace.world, intype.asInstanceOf[java.util.Set[String]])
+      case Attribute.AttributeType.REALUNBOUND => Double.box(intype.asInstanceOf[Double])
+      case Attribute.AttributeType.REAL => val out = Math.min(Math.max(intype.asInstanceOf[Double], this.lowerLim), this.upperLim)
+      if (out != intype.asInstanceOf[Double]) {
+        Console.err.printf("Warning: clamping applied to evaluation of attribute '%s'\n",name)
+      }
+      Double.box(out)
+      case Attribute.AttributeType.DISC => discValues.get(intype.asInstanceOf[Integer])
+      case Attribute.AttributeType.NOTYPE => intype.asInstanceOf[AnyRef]
+    }))
   }
   
 }

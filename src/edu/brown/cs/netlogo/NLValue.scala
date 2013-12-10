@@ -38,10 +38,20 @@ class NLValue(val attr:NLAttribute) extends Value(attr) {
   def bindState(s : NLState) = { boundState = s }
 
   def setValue(v: String): Unit = { throw new ExtensionException("NLValues are read-only. Their state is evaluted from the NetLogo model") }
-  def setValue(v: Double): Unit = { throw new ExtensionException("NLValues are read-only. Their state is evaluted from the NetLogo model") }
-  def setValue(v: Int): Unit = { throw new ExtensionException("NLValues are read-only. Their state is evaluted from the NetLogo model") }
+  def setValue(v: Double): Unit = {
+    if (attr.attrType == Attribute.AttributeType.REAL ||attr.attrType == Attribute.AttributeType.REALUNBOUND) {
+      attr.update(owningAgent,boundState,v)
+    }
+  }
+
+  def setValue(v: Int): Unit = {
+    if (attr.attrType == Attribute.AttributeType.DISC) {
+      attr.update(owningAgent,boundState,v)
+    }
+  }
 
   def addRelationalTarget(t: String): Unit = { throw new ExtensionException("NLValues are read-only. Their state is evaluted from the NetLogo model") }
+  def addRelationalTargets(t: Set[String]): Unit = { throw new ExtensionException("NLValues are read-only. Their state is evaluted from the NetLogo model") }
 
   def clearRelationTargets(): Unit = { throw new ExtensionException("NLValues are read-only. Their state is evaluted from the NetLogo model") }
 

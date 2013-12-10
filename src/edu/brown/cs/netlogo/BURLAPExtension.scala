@@ -28,12 +28,22 @@ import burlap.oomdp.singleagent._
 
 import java.io.{StringWriter,PrintWriter}
 
+object ExtensionPointer {
+  var ext:BURLAPExtension = null
+  def setExt(next:BURLAPExtension) {
+    if (ext != null) {
+      Console.err.println("Warning: two or more BURLAPExtensions have been instantiated. Something is weird here.")
+    }
+    ext = next
+  }
+}
+
 class BURLAPExtension extends DefaultClassManager {
 
   var domainMap = Map[String,Domain]()
   var contextStack = new scala.collection.mutable.Stack[ExtensionContext]()
   val versioner = new WorldVersioner(30000000)
-  
+  ExtensionPointer.setExt(this)
   def load(primitiveManager: PrimitiveManager): Unit = {
 		primitiveManager.addPrimitive("create-domain", new CreateSADomain(this,"create-domain"))
 		primitiveManager.addPrimitive("destroy-domain", new DestroySADomain(this,"destroy-domain"))
@@ -43,6 +53,7 @@ class BURLAPExtension extends DefaultClassManager {
 		primitiveManager.addPrimitive("capture-current-state",new CaptureCurrentState(this,"capture-current-state"))
 		primitiveManager.addPrimitive("return-to-state",new ReturnToState(this,"return-to-state"))
 		
+		primitiveManager.addPrimitive("evaluate-attribute-in-state",new EvaluateAttributeInState(this,"evaluate-attribute-in-state"))
 
 		primitiveManager.addPrimitive("attr:NOTYPE", new Attributer(this,"attr:NOTYPE",Attribute.AttributeType.NOTYPE))
 		primitiveManager.addPrimitive("attr:DISC", new Attributer(this,"attr:DISC",Attribute.AttributeType.DISC))
@@ -172,7 +183,7 @@ class MakeBURLAPClassForBreed(ext:BURLAPExtension, cmdName:String) extends Defau
 
 class ExposeOwn(ext:BURLAPExtension, cmdName:String) extends DefaultCommand {
   override def getSyntax():Syntax = {
-    	Syntax.commandSyntax(Array[Int](Syntax.StringType,Syntax.StringType,Syntax.StringType,Syntax.ReporterTaskType,Syntax.NumberType))
+    	Syntax.commandSyntax(Array[Int](Syntax.StringType,Syntax.StringType,Syntax.StringType,Syntax.ReporterTaskType,Syntax.CommandTaskType,Syntax.NumberType))
     }
 
     override def getAgentClassString():String = { "OTPL" }
@@ -187,7 +198,8 @@ class ExposeOwn(ext:BURLAPExtension, cmdName:String) extends DefaultCommand {
         val breedName = args(1).getString.toUpperCase
         val attrName = args(2).getString
         val attrTask = args(3).getReporterTask
-        val kind = Attribute.AttributeType.fromInt(args(4).getIntValue)
+        val attrSetter = args(4).getCommandTask
+        val kind = Attribute.AttributeType.fromInt(args(5).getIntValue)
         val domain = ext.domainMap(domainName)
         val nclass = if (domain.getObjectClass(breedName) != null ) {
           domain.getObjectClass(breedName) 
@@ -195,7 +207,7 @@ class ExposeOwn(ext:BURLAPExtension, cmdName:String) extends DefaultCommand {
           throw new IllegalArgumentException("Error in %s: argument must be a breed name, a linkBreed name, 'observer', or 'patches'".format(cmdName))
         }
         
-        val nattr = new NLAttribute(ext,domain,attrName,attrTask,kind)
+        val nattr = new NLAttribute(ext,domain,attrName,attrTask,attrSetter,kind)
         nclass.addAttribute(nattr)
         
       } catch {
@@ -235,6 +247,37 @@ class CaptureCurrentState(ext:BURLAPExtension, cmdName:String) extends DefaultRe
         }
       }
       outstate
+    }
+}
+
+class EvaluateAttributeInState(ext:BURLAPExtension, cmdName:String) extends DefaultReporter {
+  override def getSyntax():Syntax = {
+    	Syntax.reporterSyntax(Array[Int](Syntax.WildcardType,Syntax.StringType,Syntax.StringType),Syntax.WildcardType)
+    }
+
+    override def getAgentClassString():String = { "OTPL" }
+
+    override def report(args:Array[Argument], context:Context) = {
+      var outstr:String = ""
+      try{
+        ext.contextStack.push(context.asInstanceOf[ExtensionContext])
+        val world = context.asInstanceOf[ExtensionContext].workspace.world 
+        val instate = args(0).get.asInstanceOf[NLState]
+        val agentName = args(1).getString
+        val attrName = args(2).getString
+        val agentObj = instate.getObject(agentName)
+        val attr = agentObj.getValueForAttribute(attrName)
+        outstr = attr.getStringVal()
+      } catch {
+        case e : Exception => val sw = new StringWriter
+        e.printStackTrace( new PrintWriter(sw) )
+        throw new ExtensionException("Error in %s: %s\n%s".format(cmdName,e.getMessage,sw.toString))
+      } finally {
+        if(ext.contextStack.nonEmpty && ext.contextStack.top == context) {
+          ext.contextStack.pop
+        }
+      }
+      outstr
     }
 }
 

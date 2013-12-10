@@ -4,21 +4,22 @@ import org.nlogo.agent.World
 import org.nlogo.api.Context
 import org.nlogo.api.CommandTask
 import org.nlogo.api.ReporterTask
-
 import org.nlogo.agent.AgentSet
-
 import org.nlogo.api.{ExtensionException,LogoException}
 import org.nlogo.nvm.ExtensionContext
 import org.nlogo.nvm.{CompilerInterface,FileManager}
-
 import burlap.oomdp.core.Domain
 import burlap.oomdp.core.ObjectInstance
-
 import scala.collection._
 import scala.collection.JavaConversions._
-
 import java.io.{StringWriter,StringReader,PrintWriter,BufferedReader}
-import java.util._
+import burlap.oomdp.core.State
+import org.nlogo.agent.Agent
+import org.nlogo.agent.Turtle
+import org.nlogo.agent.Observer
+import org.nlogo.agent.Patch
+import org.nlogo.agent.Link
+import org.nlogo.agent.ArrayAgentSet
 
 
 class WorldVersioner(bufferSize:Int) {
@@ -29,17 +30,38 @@ class WorldVersioner(bufferSize:Int) {
   var lastId = -1
   var cached = false
   
+  private var streamingTo:State = null
+  
   def cloneWorld(oldWorld:World):String = {
+    streamingTo = null
     sw.getBuffer().setLength(0)
-    
     oldWorld.exportWorld(pw, true)
-    
     sw.toString()
     
   }
   
-  def getAgentFromString(world:World, agentName:String, agentClass:String) = {
+  def makeContextForAgent(oldNvmContext:org.nlogo.nvm.Context, agent:Agent):org.nlogo.nvm.Context ={
+    val innerAgentContext = new org.nlogo.nvm.Context(oldNvmContext,agent)
+    innerAgentContext.agent = agent
+    innerAgentContext.myself = agent
+    innerAgentContext.agentBit = agent.getAgentBit
+    innerAgentContext
+  }
+  
+  def prepForStreamingStates(s:State) = { streamingTo = s }
+  def isStreaming = { streamingTo != null }
+  
+  def getAgentFromString(world:World, agentName:String, inAgentClass:String = "") = {
     val nameComponents = agentName.split(" ")
+    val agentClass = if (inAgentClass == ""){
+      if(nameComponents(0) == "observer" || nameComponents(0) == "patches") {
+        nameComponents(0)
+      } else {
+        nameComponents(0).toUpperCase
+      }
+    } else {
+      inAgentClass
+    }
     if(agentClass == "observer") {
       world.observer
     } else if (agentClass == "patches") {
@@ -53,12 +75,37 @@ class WorldVersioner(bufferSize:Int) {
     }
   }
   
+  def findCommonAncestor(ica:Class[_ <: Agent], icb:Class[_ <: Agent]):Class[_ <: Agent] = {
+    if (ica.isInstance(icb)){
+      icb
+    } else if (icb.isInstance(ica)){
+      ica 
+    } else if (icb.isInstance(classOf[Turtle]) || icb.isInstance(classOf[Turtle])) {
+      classOf[Turtle]
+    } else if (icb.isInstance(classOf[Link]) || icb.isInstance(classOf[Link])) {
+      classOf[Link]
+    } else if (icb.isInstance(classOf[Patch]) || icb.isInstance(classOf[Patch])) {
+      classOf[Patch]
+    } else if (icb.isInstance(classOf[Observer]) || icb.isInstance(classOf[Observer])) {
+      classOf[Observer]
+    } else {
+      classOf[Agent]
+    }
+  }
+  
+  def getAgentSetFromStrings(world:World, agentNames:Set[String]):AgentSet = {
+    val agents = agentNames.map(an => getAgentFromString(world, an))
+    var parentClass = agents.head.getAgentClass
+    agents.foreach(agent => parentClass = findCommonAncestor(parentClass,agent.getAgentClass))
+    new ArrayAgentSet(parentClass, agents.toArray, world)
+  }
+  
   def copyIntoState(world:World,domain:Domain) = {
     val state = new NLState()
     state.setWorldRep(cloneWorld(world))
     world.program.breedsSingular.foreach {
       kv => if (domain.getObjectClass(kv._1) != null) world.program.breeds(kv._2).asInstanceOf[AgentSet].agents.foreach {
-        agent => state.addObject(new NLObjectInstance(domain.getObjectClass(kv._1),agent.id.toString,state))
+        agent => state.addObject(new NLObjectInstance(domain.getObjectClass(kv._1),agent.toString,state))
       }
     }
     world.program.linkBreedsSingular.foreach {
@@ -78,6 +125,7 @@ class WorldVersioner(bufferSize:Int) {
   }
   
   def restoreFromBurlapState(context:ExtensionContext,state:NLState):Unit = {
+    streamingTo = null
     if(!cached || lastId != state.hashCode){
       context.workspace.world.importWorld(VersionerErrorHandler, context.workspace, new VersionerReader(context), new BufferedReader(new StringReader(state.worldRep)))
       if(state.fixerUp != null) {

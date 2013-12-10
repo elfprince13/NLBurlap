@@ -5,6 +5,7 @@ import burlap.oomdp.core.ObjectClass
 import burlap.oomdp.core.Value
 import java.util.ArrayList
 import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 class NLObjectInstance(obClass:ObjectClass,name:String,private var boundTo:NLState) extends ObjectInstance(obClass,name) {
   
@@ -20,6 +21,13 @@ class NLObjectInstance(obClass:ObjectClass,name:String,private var boundTo:NLSta
     }
   }
   initializeValueObjects()
+  
+  def makeStatic() = {
+    values = values.map(v => v match{
+      case nlv:NLValue => nlv.getAttribute().asInstanceOf[NLAttribute].makeStaticValue(nlv)
+      case v:Value => v
+    }).toList.asJava
+  } 
   
   def getState = boundTo
   def setState(newBind:NLState) = {
