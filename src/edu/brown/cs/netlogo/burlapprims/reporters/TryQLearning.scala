@@ -14,8 +14,12 @@ import edu.brown.cs.netlogo.BURLAPExtension
 import edu.brown.cs.netlogo.NLState
 import edu.brown.cs.netlogo.NLHashFactory
 import burlap.behavior.statehashing.StateHashFactory
+import burlap.behavior.statehashing.DiscreteStateHashFactory
 import burlap.behavior.singleagent.planning.stochastic.valueiteration.ValueIteration
 import burlap.behavior.singleagent.planning.commonpolicies.GreedyQPolicy
+
+import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 class TryQLearning(ext:BURLAPExtension, cmdName:String) extends DefaultReporter {
   override def getSyntax():Syntax = {
@@ -42,7 +46,12 @@ class TryQLearning(ext:BURLAPExtension, cmdName:String) extends DefaultReporter 
         val terminus = ext.terminalMap(domainName)
         
         
-        val shf:StateHashFactory = new NLHashFactory()
+        val shf:StateHashFactory = new DiscreteStateHashFactory(
+            Map(
+                domain.getObjectClasses.map(c => Pair(c.name , c.attributeList.filter(_.asInstanceOf[Attribute].`type` == Attribute.AttributeType.DISC).toList.asJava)) :_*
+                ).asJava
+            )
+       
         val vi = new ValueIteration(domain, reward, terminus, gamma, shf, tol, maxIterations)
         
         vi.planFromState(state)

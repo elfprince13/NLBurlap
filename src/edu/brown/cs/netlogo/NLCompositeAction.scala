@@ -10,6 +10,8 @@ import scala.collection.JavaConverters._
 
 class NLCompositeAction(ext:BURLAPExtension, name:String, domain:Domain, subactions:List[Action], params:List[List[String]], model:CompositeActionModel) extends CompositeAction(name, domain, subactions.asJava, model) {
 
+  domain.getActions().remove(subactions)
+  
   def getAllGroundings(s: State): java.util.List[GroundedAction] = {
     val indices = Stream.continually(0).take(params.size).toList
     val maxes = params.map(l => l.size)

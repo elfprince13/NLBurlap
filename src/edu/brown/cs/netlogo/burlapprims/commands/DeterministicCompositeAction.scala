@@ -29,7 +29,7 @@ import edu.brown.cs.netlogo._
 
 class DeterministicCompositeAction(ext:BURLAPExtension, cmdName:String) extends DefaultCommand {
   override def getSyntax():Syntax = {
-    	Syntax.commandSyntax(Array[Int](Syntax.StringType,Syntax.StringType,Syntax.ListType,Syntax.ListType,Syntax.ListType))
+    	Syntax.commandSyntax(Array[Int](Syntax.StringType,Syntax.StringType,Syntax.ListType,Syntax.ListType,Syntax.ListType,Syntax.ListType))
     }
 
     override def getAgentClassString():String = { "OTPL" }
@@ -40,19 +40,22 @@ class DeterministicCompositeAction(ext:BURLAPExtension, cmdName:String) extends 
         val program = context.asInstanceOf[ExtensionContext].workspace.world.program 
         val domainName = args(0).getString
         val actionName = args(1).getString
-        val tasksList = args(2).getList
-        val argsKindList = args(3).getList
-        val argsList = args(4).getList
+        val actorsList = args(2).getList
+        val tasksList = args(3).getList
+        val argsKindList = args(4).getList
+        val argsList = args(5).getList
         val domain = ext.domainMap(domainName)
         
-        val argsListStr = argsList.toList.map(il => il.asInstanceOf[LogoList].toList.map(s => s.toString))
-        val argsKindListStr = argsKindList.toList.map(s => s.toString)
+        val actorsListStr = actorsList.toList.map(s => s.toString).toList
+        val argsListStr = argsList.toList.map(il => il.asInstanceOf[LogoList].toList.map(s => s.toString).toList).toList
+        val argsKindListStr = argsKindList.toList.map(s => s.toString).toList
         
-        val actionsList = (tasksList.toList).zip(argsKindListStr).zipWithIndex.map{tri => 
-          val counter = tri._2
+        val actionsList = ((tasksList.toList).zip(argsKindListStr)).zip(actorsListStr.zipWithIndex).map{tri => 
+          val counter = tri._2._2
+          val actor = tri._2._1
           val task = tri._1._1.asInstanceOf[CommandTask]
-          val paramKinds = tri._1._2
-          new NLAction(ext,domain,"%s-%d".format(actionName,counter),task,
+          val paramKinds = tri._1._2.toUpperCase()
+          new NLAction(ext,domain,"%s %s-%d".format(actor,actionName,counter),task,
               if (domain.getObjectClass(paramKinds) == null) { Array[String]() } 
               else { Array[String](paramKinds) }
           )
