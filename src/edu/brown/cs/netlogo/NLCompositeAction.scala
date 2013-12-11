@@ -30,11 +30,7 @@ class NLCompositeAction(ext:BURLAPExtension, name:String, domain:Domain, subacti
       val m = pair._2
       val carryAdd = if(carry){1}else{0}
       val next = (i+1) + carryAdd
-      if(next>=m){
-        carry = true 
-      } else {
-        carry = false 
-      }
+      carry = (next>=m)
       next%m
     })
   }
