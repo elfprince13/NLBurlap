@@ -28,12 +28,14 @@ class NLCompositeAction(ext:BURLAPExtension, name:String, domain:Domain, subacti
     var carry = false
     indices.zip(maxes).map({pair => val i = pair._1
       val m = pair._2
-      if(i+1==m){
+      val carryAdd = if(carry){1}else{0}
+      val next = (i+1) + carryAdd
+      if(next>=m){
         carry = true 
       } else {
         carry = false 
       }
-      (i+1)%m
+      next%m
     })
   }
 
