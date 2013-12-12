@@ -32,6 +32,12 @@ class WorldVersioner(bufferSize:Int) {
   
   private var streamingTo:State = null
   
+  /*private var ignoreVersioningRequests = false
+  
+  def setChainActions(chainActions:Boolean) = {
+    ignoreVersioningRequests = chainActions
+  }*/
+  
   def cloneWorld(oldWorld:World):String = {
     streamingTo = null
     sw.getBuffer().setLength(0)
@@ -125,15 +131,17 @@ class WorldVersioner(bufferSize:Int) {
   }
   
   def restoreFromBurlapState(context:ExtensionContext,state:NLState):Unit = {
-    streamingTo = null
-    if(!cached || lastId != state.hashCode){
-      context.workspace.world.importWorld(VersionerErrorHandler, context.workspace, new VersionerReader(context), new BufferedReader(new StringReader(state.worldRep)))
-      if(state.fixerUp != null) {
-        doCommands(state.fixerUp,context, Array())
+    //if(!ignoreVersioningRequests) {
+      streamingTo = null
+      if(!cached || lastId != state.hashCode){
+        context.workspace.world.importWorld(VersionerErrorHandler, context.workspace, new VersionerReader(context), new BufferedReader(new StringReader(state.worldRep)))
+        if(state.fixerUp != null) {
+          doCommands(state.fixerUp,context, Array())
+        }
+        cached = true
+        lastId = state.hashCode
       }
-      cached = true
-      lastId = state.hashCode
-    }
+    //}
   }
   
   // Assume commands are side-effectful

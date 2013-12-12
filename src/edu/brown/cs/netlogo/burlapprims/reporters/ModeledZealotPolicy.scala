@@ -41,7 +41,7 @@ class ModeledZealotPolicy(ext:BURLAPExtension, cmdName:String) extends DefaultRe
         val generator = new burlap.domain.singleagent.composite.zealots.ZealotsDomainGenerator(numguys,minhealth,maxhealth)
         val modelDomain = generator.generateDomain()
         
-        if(cmdName == "get-modeled-greedy"){
+        if(cmdName == "get-modeled-greedyq"){
           outpolicy = generator.getPolicyByVI(modelDomain, 0.95, 0.01, 1000)
         } else if(cmdName == "get-modeled-factoredsolution") {
           outpolicy = generator.getPolicyFromFactoredSolution(modelDomain, generator.getFactoredSolution(modelDomain, 0.95))

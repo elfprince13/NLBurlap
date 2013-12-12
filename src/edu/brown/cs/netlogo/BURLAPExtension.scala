@@ -28,6 +28,7 @@ import org.nlogo.nvm.CommandTask
 import org.nlogo.nvm.ReporterTask
 import edu.brown.cs.netlogo.burlapprims.reporters._
 import edu.brown.cs.netlogo.burlapprims.commands._
+import edu.brown.cs.netlogo.burlapprims.reporters.ConsultPolicy
 
 object ExtensionPointer {
   var ext:BURLAPExtension = null

@@ -53,8 +53,8 @@ class NLState extends State {
   
   def copyStatic() = {
     val outState = new State()
-    outState.getAllObjects().foreach{
-      o => o.asInstanceOf[NLObjectInstance].makeStatic()
+    this.getAllObjects().foreach{
+      o => outState.addObject(o.asInstanceOf[NLObjectInstance].makeStatic())
     }
 	outState
   }

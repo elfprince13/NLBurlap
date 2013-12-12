@@ -23,10 +23,14 @@ class NLObjectInstance(obClass:ObjectClass,name:String,private var boundTo:NLSta
   initializeValueObjects()
   
   def makeStatic() = {
-    values = values.map(v => v match{
-      case nlv:NLValue => nlv.getAttribute().asInstanceOf[NLAttribute].makeStaticValue(nlv)
-      case v:Value => v
-    }).toList.asJava
+    val outInstance = new ObjectInstance(obClass,name);
+    values.foreach{v => val staticV = v match{
+        case nlv:NLValue => nlv.getAttribute().asInstanceOf[NLAttribute].makeStaticValue(nlv)
+        case v:Value => v
+      }
+      outInstance.setValue(staticV.attName,staticV.getStringVal)
+    }
+    outInstance
   } 
   
   def getState = boundTo
