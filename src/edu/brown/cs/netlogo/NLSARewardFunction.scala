@@ -8,7 +8,8 @@ import org.nlogo.nvm.ReporterTask
 
 class NLSARewardFunction(ext:BURLAPExtension, domain:String, classname:String, reporter:ReporterTask) extends RewardFunction {
   def reward(s:State, a:GroundedAction, sprime:State):Double = {
-    val o = s.getObservableObjectAt(0)
+    ext.versioner.restoreFromBurlapState(ext.contextStack.top, sprime.asInstanceOf[NLState])
+    val o = sprime.getObservableObjectAt(0)
     val agent = ext.versioner.getAgentFromString(ext.contextStack.top.workspace.world, o.getName, o.getObjectClass.name)
     
     val agentContext = new ExtensionContext(ext.contextStack.top.workspace, ext.versioner.makeContextForAgent(ext.contextStack.top.nvmContext,agent)) // innerAgentContext)

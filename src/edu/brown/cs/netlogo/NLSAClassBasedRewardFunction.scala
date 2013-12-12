@@ -9,8 +9,8 @@ class NLSAClassBasedRewardFunction(ext:BURLAPExtension, initClasses:java.util.Ma
 
   override def reward(s:State, a:GroundedAction, sprime:State) = {
     val nls = new NLState(s)
-    ext.versioner.restoreFromBurlapState(ext.contextStack.top, nls)
-    super.reward(nls, a, null) // We only care about current actions
+    val nlsprime = new NLState(sprime)
+    super.reward(nls, a, nlsprime)
   }
   
 }

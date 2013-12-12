@@ -53,6 +53,7 @@ class BURLAPExtension extends DefaultClassManager {
 		primitiveManager.addPrimitive("set-name-dependence", new SetNameDependentDomain(this,"set-name-dependence"))
 		primitiveManager.addPrimitive("expose-agent-class", new MakeBURLAPClassForBreed(this,"expose-agent-class"))
 		primitiveManager.addPrimitive("expose-own-attr", new ExposeOwn(this,"expose-own-attr"))
+		primitiveManager.addPrimitive("expose-shared-attr", new ExposeExisting(this,"shared-attr"))
 		primitiveManager.addPrimitive("capture-current-state",new CaptureCurrentState(this,"capture-current-state"))
 		primitiveManager.addPrimitive("return-to-state",new ReturnToState(this,"return-to-state"))
 		
@@ -61,6 +62,10 @@ class BURLAPExtension extends DefaultClassManager {
 		primitiveManager.addPrimitive("set-terminal-function",new SetTerminalFunction(this,"set-terminal-rewards"))
 		
 		primitiveManager.addPrimitive("try-qlearning", new TryQLearning(this, "try-qlearning"))
+		primitiveManager.addPrimitive("get-modeled-greedyq", new ModeledZealotPolicy(this, "get-modeled-greedyq"))
+		primitiveManager.addPrimitive("get-modeled-factoredsolution", new ModeledZealotPolicy(this, "get-modeled-factoredsolution"))
+		
+		primitiveManager.addPrimitive("consult-policy", new ConsultPolicy(this, "consult-policy"))
 		
 		primitiveManager.addPrimitive("evaluate-attribute-in-state",new EvaluateAttributeInState(this,"evaluate-attribute-in-state"))
 
